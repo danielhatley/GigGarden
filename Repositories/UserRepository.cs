@@ -1,7 +1,7 @@
 ﻿
 
 using GigGarden.Data;
-using GigGarden.Models;
+using GigGarden.Models.Entities;
 
 namespace GigGarden.Repositories;
 
