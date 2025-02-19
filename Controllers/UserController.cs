@@ -100,13 +100,15 @@ namespace GigGarden.Controllers
                 [GivenName],
                 [Email],
                 [ProfilePictureUrl],
-                [Description]
+                [Description],
+                [CreatedBy]
             ) VALUES (" +
                     "'" + user.UserName +
                     "', '" + user.GivenName +
                     "', '" + user.Email +
                     "', '" + user.ProfilePictureUrl +
                     "', '" + user.Description +
+                    "', '" + user.CreatedBy +
                 "')";
 
             Console.WriteLine(sql);
