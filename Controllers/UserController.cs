@@ -109,27 +109,95 @@ namespace GigGarden.Controllers
             return user;
         }
 
+        //[HttpPut("EditUser")]
+        //public IActionResult EditUser(User user)
+        //{
+        //    string sql = @"
+        //        UPDATE dbo.[User]
+        //            SET [UserName] = '" + user.UserName +
+        //                "', [GivenName] = '" + user.GivenName +
+        //                "', [Email] = '" + user.Email +
+        //                "', [ProfilePictureUrl] = '" + user.ProfilePictureUrl +
+        //                "', [Description] = '" + user.Description +
+        //            "' WHERE UserId = " + user.UserId;
+
+        //    Console.WriteLine(sql);
+
+        //    if (_dapper.ExecuteSql(sql))
+        //    {
+        //        return Ok();
+        //    }
+
+        //    throw new Exception("Failed to Update User");
+        //}
+
         [HttpPut("EditUser")]
         public IActionResult EditUser(User user)
         {
-            string sql = @"
+            var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
+
+            List<string> updateFields = new List<string>();
+            var parameters = new DynamicParameters();
+
+            if (!string.IsNullOrEmpty(user.UserName))
+            {
+                updateFields.Add("[UserName] = @UserName");
+                parameters.Add("@UserName", user.UserName);
+            }
+            if (!string.IsNullOrEmpty(user.GivenName))
+            {
+                updateFields.Add("[GivenName] = @GivenName");
+                parameters.Add("@GivenName", user.GivenName);
+            }
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                updateFields.Add("[Email] = @Email");
+                parameters.Add("@Email", user.Email);
+            }
+            if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+            {
+                updateFields.Add("[ProfilePictureUrl] = @ProfilePictureUrl");
+                parameters.Add("@ProfilePictureUrl", user.ProfilePictureUrl);
+            }
+            if (!string.IsNullOrEmpty(user.Description))
+            {
+                updateFields.Add("[Description] = @Description");
+                parameters.Add("@Description", user.Description);
+            }
+
+            // Ensure at least one field is being updated
+            if (!updateFields.Any())
+            {
+                return BadRequest("No fields provided for update.");
+            }
+
+            // Always update the timestamp and updater info
+            updateFields.Add("[UpdatedAt] = @UpdatedAt");
+            updateFields.Add("[UpdatedOffset] = @UpdatedOffset");
+            updateFields.Add("[UpdatedBy] = @UpdatedBy");
+
+            parameters.Add("@UpdatedAt", timestamp);
+            parameters.Add("@UpdatedOffset", offset);
+            parameters.Add("@UpdatedBy", user.UpdatedBy); // Replace with actual user when authentication is set up
+
+            // Build dynamic SQL query
+            string sql = $@"
                 UPDATE dbo.[User]
-                    SET [UserName] = '" + user.UserName +
-                        "', [GivenName] = '" + user.GivenName +
-                        "', [Email] = '" + user.Email +
-                        "', [ProfilePictureUrl] = '" + user.ProfilePictureUrl +
-                        "', [Description] = '" + user.Description +
-                    "' WHERE UserId = " + user.UserId;
+                SET {string.Join(", ", updateFields)}
+                WHERE UserId = @UserId";
 
-            Console.WriteLine(sql);
+            parameters.Add("@UserId", user.UserId);
 
-            if (_dapper.ExecuteSql(sql))
+            bool success = _dapper.ExecuteSqlWithParameters(sql, parameters);
+
+            if (success)
             {
                 return Ok();
             }
 
             throw new Exception("Failed to Update User");
         }
+
 
         [HttpPost("AddUser")]
         public IActionResult AddUser(User user)
