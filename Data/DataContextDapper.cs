@@ -36,7 +36,7 @@ public class DataContextDapper
         return dbConnection.Execute(sql);
     }
 
-    public bool ExecuteSqlWithParameters(string sql, List<SqlParameter> parameters)
+    public bool ExecuteSqlWithParameters(string sql, object parameters)
     {
         IDbConnection dbConnection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
         return dbConnection.Execute(sql, parameters) > 0;
