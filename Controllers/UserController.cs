@@ -292,6 +292,37 @@ namespace GigGarden.Controllers
         //}
 
         [HttpDelete("DeleteUser/{userId}")]
+        public IActionResult DeleteUser(int userId, int deletedBy)
+        {
+            var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
+
+            string sql = @"
+                UPDATE dbo.[User]
+                SET DeletedAt = @DeletedAt,
+                    DeletedOffset = @DeletedOffset,
+                    DeletedBy = @DeletedBy
+                WHERE UserId = @UserId";
+
+            var parameters = new
+            {
+                DeletedAt = timestamp,
+                DeletedOffset = offset,
+                DeletedBy = deletedBy, // Replace with authenticated user when ready
+                UserId = userId
+            };
+
+            bool success = _dapper.ExecuteSqlWithParameters(sql, parameters);
+
+            if (success)
+            {
+                return Ok();
+            }
+
+            throw new Exception("Failed to Soft Delete User");
+        }
+
+
+        [HttpDelete("PermanentlyDeleteUser/{userId}")]
         public IActionResult DeleteUser(int userId)
         {
             string sql = @"
