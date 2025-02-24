@@ -57,30 +57,28 @@ namespace GigGarden.Controllers
         //}
 
         [HttpGet("GetUsers")]
-        public IEnumerable<User> GetUsers()
+        public IEnumerable<User> GetUsers(bool includeDeleted = false, bool onlyDeleted = false)
         {
             string sql = @"
-                SELECT 
-                    UserId, 
-                    UserName, 
-                    GivenName, 
-                    Email, 
-                    ProfilePictureUrl, 
-                    Description,
-                    CreatedAt,
-                    CreatedOffset,
-                    CreatedBy,
-                    UpdatedAt, 
-                    UpdatedOffset, 
-                    UpdatedBy, 
-                    DeletedAt, 
-                    DeletedOffset, 
-                    DeletedBy
-                FROM dbo.[User]";
+        SELECT UserId, UserName, GivenName, Email, ProfilePictureUrl, Description, 
+               CreatedAt, CreatedOffset, CreatedBy, 
+               UpdatedAt, UpdatedOffset, UpdatedBy, 
+               DeletedAt, DeletedOffset, DeletedBy
+        FROM dbo.[User]";
 
-            IEnumerable<User> users = _dapper.LoadData<User>(sql);
-            return users;
+            if(onlyDeleted)
+            {
+                sql += " WHERE DeletedAt IS NOT NULL";
+            }
+
+            else if (!includeDeleted)
+            {
+                sql += " WHERE DeletedAt IS NULL";
+            }
+
+            return _dapper.LoadData<User>(sql);
         }
+
 
 
         [HttpGet("GetSingleUser/{userId}")]
