@@ -102,8 +102,20 @@ namespace GigGarden.Controllers
                     DeletedOffset, 
                     DeletedBy
                 FROM dbo.[User]
-                    WHERE UserId = " + userId.ToString();
-            User user = _dapper.LoadDataSingle<User>(sql);
+                    WHERE UserId = @UserId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+
+            var user = _dapper.LoadDataSingleWithParameters<User>(sql, parameters);
+
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            user.IsDeleted = user.DeletedAt.HasValue;
+
             return user;
         }
 
