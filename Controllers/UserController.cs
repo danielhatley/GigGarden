@@ -24,38 +24,6 @@ namespace GigGarden.Controllers
             return _dapper.LoadDataSingle<DateTime>("SELECT GETDATE()");
         }
 
-        //[HttpGet("GetUsers")]
-        //public IActionResult GetUsers()
-        //{
-        //    try
-        //    {
-        //        string sql = @"
-        //    SELECT [UserId], [UserName], [GivenName], [Email], [ProfilePictureUrl], [Description] 
-        //    FROM dbo.Users";  // Use dbo.[User] instead of [User]
-
-        //        IEnumerable<User> users = _dapper.LoadData<User>(sql);
-        //        return Ok(users);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, $"Error retrieving users: {ex.Message}");
-        //    }
-        //}
-        //[HttpGet("GetUsers")]
-        //public IEnumerable<User> GetUsers()
-        //{
-        //    string sql = @"
-        //        SELECT [UserId],
-        //            [UserName],
-        //            [GivenName],
-        //            [Email],
-        //            [ProfilePictureUrl],
-        //            [Description] 
-        //        FROM dbo.[User]";
-        //    IEnumerable<User> users = _dapper.LoadData<User>(sql);
-        //    return users;
-        //}
-
         [HttpGet("GetUsers")]
         public IEnumerable<User> GetUsers(bool includeDeleted = false, bool onlyDeleted = false)
         {
@@ -78,8 +46,6 @@ namespace GigGarden.Controllers
 
             return _dapper.LoadData<User>(sql);
         }
-
-
 
         [HttpGet("GetSingleUser/{userId}")]
         public User GetSingleUser(int userId)
@@ -114,37 +80,13 @@ namespace GigGarden.Controllers
                 throw new Exception("User not found.");
             }
 
-            user.IsDeleted = user.DeletedAt.HasValue;
-
             return user;
         }
-
-        //[HttpPut("EditUser")]
-        //public IActionResult EditUser(User user)
-        //{
-        //    string sql = @"
-        //        UPDATE dbo.[User]
-        //            SET [UserName] = '" + user.UserName +
-        //                "', [GivenName] = '" + user.GivenName +
-        //                "', [Email] = '" + user.Email +
-        //                "', [ProfilePictureUrl] = '" + user.ProfilePictureUrl +
-        //                "', [Description] = '" + user.Description +
-        //            "' WHERE UserId = " + user.UserId;
-
-        //    Console.WriteLine(sql);
-
-        //    if (_dapper.ExecuteSql(sql))
-        //    {
-        //        return Ok();
-        //    }
-
-        //    throw new Exception("Failed to Update User");
-        //}
 
         [HttpPut("EditUser")]
         public IActionResult EditUser(User user)
         {
-            var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
+            var (updatedAt, updatedOffset) = TimeHelper.GetCurrentTimestamp();
 
             List<string> updateFields = new List<string>();
             var parameters = new DynamicParameters();
@@ -186,8 +128,8 @@ namespace GigGarden.Controllers
             updateFields.Add("[UpdatedOffset] = @UpdatedOffset");
             updateFields.Add("[UpdatedBy] = @UpdatedBy");
 
-            parameters.Add("@UpdatedAt", timestamp);
-            parameters.Add("@UpdatedOffset", offset);
+            parameters.Add("@UpdatedAt", updatedAt);
+            parameters.Add("@UpdatedOffset", updatedOffset);
             parameters.Add("@UpdatedBy", user.UpdatedBy); // Replace with actual user when authentication is set up
 
             // Build dynamic SQL query
@@ -212,7 +154,7 @@ namespace GigGarden.Controllers
         [HttpPost("AddUser")]
         public IActionResult AddUser(User user)
         {
-            var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
+            var (createdAt, createdOffset) = TimeHelper.GetCurrentTimestamp();
 
             string sql = @"
                 INSERT INTO dbo.[User] (
@@ -243,8 +185,8 @@ namespace GigGarden.Controllers
                 user.ProfilePictureUrl,
                 user.Description,
                 user.CreatedBy, // Placeholder for actual user ID
-                CreatedAt = timestamp,
-                CreatedOffset = offset
+                CreatedAt = createdAt,
+                CreatedOffset = createdOffset
             };
 
             bool success = _dapper.ExecuteSqlWithParameters(sql, parameters);
@@ -256,55 +198,10 @@ namespace GigGarden.Controllers
             throw new Exception("Failed to Add User");
         }
 
-
-
-        //[HttpPost("AddUser")]
-        //public IActionResult AddUser(User user)
-        //{
-        //    var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
-
-        //    var parameters = new
-        //    {
-        //        CreatedAt = timestamp,
-        //        CreatedOffset = offset,
-        //        /*CreatedBy = userId */// Replace with actual user when authentication is set up
-        //    };
-
-        //    string sql = @"
-        //    INSERT INTO dbo.[User](
-        //        [UserName],
-        //        [GivenName],
-        //        [Email],
-        //        [ProfilePictureUrl],
-        //        [Description],
-        //        [CreatedBy],
-        //        [CreatedAt],
-        //        [CreatedOffset]
-        //    ) VALUES (" +
-        //            "'" + user.UserName +
-        //            "', '" + user.GivenName +
-        //            "', '" + user.Email +
-        //            "', '" + user.ProfilePictureUrl +
-        //            "', '" + user.Description +
-        //            "', '" + user.CreatedBy +
-        //            "', '" + parameters.CreatedAt +
-        //            "', '" + parameters.CreatedOffset +
-        //        "')";
-
-        //    Console.WriteLine(sql);
-
-        //    if (_dapper.ExecuteSql(sql))
-        //    {
-        //        return Ok();
-        //    }
-
-        //    throw new Exception("Failed to Add User");
-        //}
-
         [HttpDelete("DeleteUser/{userId}")]
         public IActionResult DeleteUser(int userId, int deletedBy)
         {
-            var (timestamp, offset) = TimeHelper.GetTimestampWithOffset();
+            var (deletedAt, deletedOffset) = TimeHelper.GetCurrentTimestamp();
 
             string sql = @"
                 UPDATE dbo.[User]
@@ -315,8 +212,8 @@ namespace GigGarden.Controllers
 
             var parameters = new
             {
-                DeletedAt = timestamp,
-                DeletedOffset = offset,
+                DeletedAt = deletedAt,
+                DeletedOffset = deletedOffset,
                 DeletedBy = deletedBy, // Replace with authenticated user when ready
                 UserId = userId
             };
@@ -330,7 +227,6 @@ namespace GigGarden.Controllers
 
             throw new Exception("Failed to Soft Delete User");
         }
-
 
         [HttpDelete("PermanentlyDeleteUser/{userId}")]
         public IActionResult DeleteUser(int userId)
