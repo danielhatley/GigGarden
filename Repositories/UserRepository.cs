@@ -71,39 +71,41 @@ namespace GigGarden.Repositories
             List<string> updateFields = new List<string>();
             var parameters = new DynamicParameters();
 
-            if (!string.IsNullOrEmpty(user.UserName))
+            // Fetch existing user data
+            var existingUser = GetSingleUser(user.UserId);
+            if (existingUser == null) return false; // User not found
+
+            // Compare fields before updating
+            if (!string.IsNullOrEmpty(user.UserName) && user.UserName != existingUser.UserName)
             {
                 updateFields.Add("[UserName] = @UserName");
                 parameters.Add("@UserName", user.UserName);
             }
-            if (!string.IsNullOrEmpty(user.GivenName))
+            if (!string.IsNullOrEmpty(user.GivenName) && user.GivenName != existingUser.GivenName)
             {
                 updateFields.Add("[GivenName] = @GivenName");
                 parameters.Add("@GivenName", user.GivenName);
             }
-            if (!string.IsNullOrEmpty(user.Email))
+            if (!string.IsNullOrEmpty(user.Email) && user.Email != existingUser.Email)
             {
                 updateFields.Add("[Email] = @Email");
                 parameters.Add("@Email", user.Email);
             }
-            if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+            if (!string.IsNullOrEmpty(user.ProfilePictureUrl) && user.ProfilePictureUrl != existingUser.ProfilePictureUrl)
             {
                 updateFields.Add("[ProfilePictureUrl] = @ProfilePictureUrl");
                 parameters.Add("@ProfilePictureUrl", user.ProfilePictureUrl);
             }
-            if (!string.IsNullOrEmpty(user.Description))
+            if (!string.IsNullOrEmpty(user.Description) && user.Description != existingUser.Description)
             {
                 updateFields.Add("[Description] = @Description");
                 parameters.Add("@Description", user.Description);
             }
 
-            // Return false if no fields are updated
-            if (!updateFields.Any())
-            {
-                return false; // Prevent running the query with no changes
-            }
+            // If no actual changes, return false
+            if (!updateFields.Any()) return false;
 
-            // Always update the timestamp and updater info
+            // Always update the timestamp and updater info if something is modified
             updateFields.Add("[UpdatedAt] = @UpdatedAt");
             updateFields.Add("[UpdatedOffset] = @UpdatedOffset");
             updateFields.Add("[UpdatedBy] = @UpdatedBy");
