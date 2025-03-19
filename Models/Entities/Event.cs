@@ -10,5 +10,6 @@ namespace GigGarden.Models.Entities
         public int TicketsAvailable { get; set; }
         public string EventType { get; set; } = "";
         public string Status { get; set; } = "";
+
     }
 }
